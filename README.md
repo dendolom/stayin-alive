@@ -9,6 +9,12 @@ The `stayin-alive` Python script is designed to keep your computer active by sim
 - **Configurable Settings:** Customize the behavior through a `config.yml` file, including mouse movement intervals, key press intervals, smoothness and option to enable or disable mouse and keyboard simulation.
 - **Cross-Platform Support:** Works on Windows, macOS, and Linux.
 
+## Python Version
+This script requires Python 3.10 or higher. Ensure you have a compatible version installed on your system. You can check your Python version with the following command:
+```bash
+python --version
+```
+
 ## Installation
 1. **Clone the repository:**
     ```bash
