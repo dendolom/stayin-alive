@@ -222,13 +222,18 @@ class StayinAlive:
 
             elif os_type == "Darwin":  # MacOS
                 script = '''
+                try
                     tell application "System Events"
-                        set appList to name of every process whose background only is false
+                        set appList to name of (processes where background only is false)
                     end tell
-                    set randomApp to some item of appList
-                    tell application randomApp to activate
-                    '''
-                subprocess.run(["osascript", "-e", script])
+
+                    if (count of appList) > 1 then
+                        set randomApp to some item of appList
+                        tell application randomApp to activate
+                    end if
+                end try
+                '''
+                subprocess.run(["osascript", "-e", script], timeout=5)
 
             elif os_type == "Linux":  # Linux
                 self.keyboard.press(Key.alt)
@@ -261,10 +266,12 @@ class StayinAlive:
                     self.keyboard.release(Key.ctrl)
 
                 elif os_type == "Darwin":  # MacOS
-                    self.keyboard.press(Key.ctrl)
-                    self.keyboard.press(Key.tab)
-                    self.keyboard.release(Key.tab)
-                    self.keyboard.release(Key.ctrl)
+                    self.keyboard.press(Key.cmd)
+                    self.keyboard.press(Key.shift)
+                    self.keyboard.press(']')
+                    self.keyboard.release(']')
+                    self.keyboard.release(Key.shift)
+                    self.keyboard.release(Key.cmd)
 
                 elif os_type == "Linux":  # Linux
                     self.keyboard.press(Key.ctrl)
