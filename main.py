@@ -9,19 +9,27 @@ def main():
     # Print the values to debug and ensure they are loaded correctly
     print(f"LOADED KEY_INTERVAL={config.key_interval}")
     print(f"LOADED MOUSE_INTERVAL={config.mouse_interval}")
+    print(f"LOADED WINDOW_INTERVAL={config.window_interval}")
+    print(f"LOADED TAB_INTERVAL={config.tab_interval}")
     print(f"LOADED KEY_SMOOTHNESS={config.key_smoothness}")
     print(f"LOADED MOUSE_SMOOTHNESS={config.mouse_smoothness}")
     print(f"LOADED ENABLE_KEYBOARD={config.enable_keyboard}")
     print(f"LOADED ENABLE_MOUSE={config.enable_mouse}")
+    print(f"LOADED ENABLE_WINDOW={config.enable_window}")
+    print(f"LOADED ENABLE_TAB={config.enable_tab}")
 
     # Create and start the StayinAlive instance with configuration
     stayin_alive = StayinAlive(
         mouse_interval=config.mouse_interval,
         key_interval=config.key_interval,
+        window_interval=config.window_interval,
+        tab_interval=config.tab_interval,
         key_smoothness=config.key_smoothness,
         mouse_smoothness=config.mouse_smoothness,
         enable_mouse=config.enable_mouse,
-        enable_keyboard=config.enable_keyboard
+        enable_keyboard=config.enable_keyboard,
+        enable_window=config.enable_window,
+        enable_tab=config.enable_tab,
     )
     stayin_alive.start()
 

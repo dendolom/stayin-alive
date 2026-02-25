@@ -20,7 +20,17 @@ python --version
     ```bash
     git clone https://github.com/dendolom/stayin-alive.git
     ```
-2. **Install the required packages:**
+2. **Set up the virtual environment:**
+    ```bash
+    python -m venv venv
+    ```
+    ```bash
+    source venv/bin/activate # MacOS / Linux
+    ```
+    ```bash
+    venv\Scripts\activate # Windows
+    ```
+3. **Install the required packages:**
     ```bash
     pip install -r requirements.txt
     ```
@@ -37,6 +47,12 @@ key_interval: 5  # Default is 5 seconds
 # Time interval in seconds for mouse movements
 mouse_interval: 5  # Default is 5 seconds
 
+# Time interval in seconds for window switching
+window_interval: 10  # Default is 10 seconds
+
+# Time interval in seconds for tab switching
+tab_interval: 10  # Default is 10 seconds
+
 # Smoothness of key presses (lower is smoother)
 key_smoothness: 0.1  # Default is 0.1
 
@@ -48,6 +64,12 @@ enable_keyboard: True  # Default is True
 
 # Enable or disable mouse control (True/False)
 enable_mouse: True  # Default is True
+
+# Enable or disable window switching (True/False)
+enable_window: True  # Default is True
+
+# Enable or disable tab switching (True/False)
+enable_tab: True  # Default is True
 ```
 
 ## Run

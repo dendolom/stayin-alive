@@ -13,30 +13,64 @@ class StayinAlive:
     def __init__(self,
                  key_interval,
                  mouse_interval,
+                 window_interval,
+                 tab_interval,
                  key_smoothness,
                  mouse_smoothness,
                  enable_keyboard,
-                 enable_mouse):
+                 enable_mouse,
+                 enable_window,
+                 enable_tab):
         """
         Initialize the StayinAlive class with configurable parameters.
 
         :param key_interval: Time interval in seconds for key presses
         :param mouse_interval: Time interval in seconds for mouse movement
+        :param window_interval: Time interval in seconds for window switching
+        :param tab_interval: Time interval in seconds for tab switching
         :param key_smoothness: Smoothness of key presses (lower is smoother)
         :param mouse_smoothness: Smoothness of mouse movement (lower is smoother)
         :param enable_keyboard: Boolean to enable or disable keyboard control
         :param enable_mouse: Boolean to enable or disable mouse control
+        :param enable_window: Boolean to enable or disable window switching
+        :param enable_tab: Boolean to enable or disable tab switching
         """
-        self.key_interval = key_interval
-        self.mouse_interval = mouse_interval
+
+        # Detect operating system once and reuse everywhere
+        self.os_type = platform.system()
+
+        # Minimum 0.5s to prevent CPU spikes or unrealistic behavior
+        self.key_interval = max(0.5, key_interval)
+        self.mouse_interval = max(0.5, mouse_interval)
+        self.window_interval = max(0.5, window_interval)
+        self.tab_interval = max(0.5, tab_interval)
+
+        # Controls how natural movements and typing appear
         self.key_smoothness = key_smoothness
         self.mouse_smoothness = mouse_smoothness
+
+
+        # Controls main loop execution
         self.running = True
 
-        # Create a list of all alphanumeric keys (lowercase, uppercase, and digits)
-        self.keys = [chr(i) for i in range(97, 123)] + [chr(i) for i in range(65, 91)] + [str(i) for i in range(10)]
-        self.keyboard = KeyboardController() if enable_keyboard else None
-        self.mouse = MouseController() if enable_mouse else None
+        # Keyboard and mouse controllers are always initialized
+        self.keyboard = KeyboardController()
+        self.mouse = MouseController()
+
+        # Alphanumeric characters used for simulated typing
+        self.keys = (
+            [chr(i) for i in range(97, 123)] +   # a-z
+            [chr(i) for i in range(65, 91)] +    # A-Z
+            [str(i) for i in range(10)]          # 0-9
+        )
+
+        # Enable or disable individual behaviors
+        self.enable_keyboard = enable_keyboard
+        self.enable_mouse = enable_mouse
+        self.enable_window = enable_window
+        self.enable_tab = enable_tab
+
+        # Track subprocesses for macOS and Linux sleep prevention
         self.caffeinate_process = None
         self.systemd_inhibit_process = None
 
@@ -68,7 +102,7 @@ class StayinAlive:
         """
         Prevent the system from sleeping based on the operating system.
         """
-        os_type = platform.system()
+        os_type = self.os_type
         if os_type == "Windows":  # Windows
             self.prevent_sleep_windows()
         elif os_type == "Darwin":  # MacOS
@@ -103,7 +137,7 @@ class StayinAlive:
         """
         Stop preventing sleep based on the operating system.
         """
-        os_type = platform.system()
+        os_type = self.os_type
         if os_type == "Windows":  # Windows
             self.stop_prevent_sleep_windows()
         elif os_type == "Darwin":  # MacOS
@@ -118,11 +152,11 @@ class StayinAlive:
         :param start_pos: Starting position of the mouse (x, y)
         :param end_pos: Ending position of the mouse (x, y)
         """
-        if not self.mouse:
+        if not self.enable_mouse:
             return
 
         # Calculate the number of steps for smooth movement
-        steps = int(self.mouse_smoothness * 100)
+        steps = max(1, int(self.mouse_smoothness * 100))
         x_step = (end_pos[0] - start_pos[0]) / steps
         y_step = (end_pos[1] - start_pos[1]) / steps
 
@@ -137,7 +171,7 @@ class StayinAlive:
         """
         Move the mouse to a random position on the screen.
         """
-        if not self.mouse:
+        if not self.enable_mouse:
             return
 
         screen_width, screen_height = pyautogui.size()  # Get screen size
@@ -151,7 +185,7 @@ class StayinAlive:
         Press between 1 - 10 random keys from the list of alphanumeric keys with smoothness,
         and end the sequence with a space.
         """
-        if not self.keyboard:
+        if not self.enable_keyboard:
             return
 
         num_chars = random.randint(1, 10)  # Randomly choose the number of characters to type
@@ -167,6 +201,81 @@ class StayinAlive:
         self.keyboard.release(' ')
 
         time.sleep(self.key_interval)  # Throttle key presses
+
+    def switch_random_window(self):
+        """
+        Switch to a random open window.
+        """
+        if not self.enable_window:
+            return
+
+        os_type = self.os_type
+
+        try:
+            if os_type == "Windows":  # Windows
+                import pygetwindow as gw
+                windows = [w for w in gw.getAllWindows() if w.title]
+
+                if len(windows) > 1:
+                    target = random.choice(windows)
+                    target.activate()
+
+            elif os_type == "Darwin":  # MacOS
+                script = '''
+                    tell application "System Events"
+                        set appList to name of every process whose background only is false
+                    end tell
+                    set randomApp to some item of appList
+                    tell application randomApp to activate
+                    '''
+                subprocess.run(["osascript", "-e", script])
+
+            elif os_type == "Linux":  # Linux
+                self.keyboard.press(Key.alt)
+                self.keyboard.press(Key.tab)
+                self.keyboard.release(Key.tab)
+                self.keyboard.release(Key.alt)
+
+        except Exception as e:
+            print(f"Random window switch failed: {e}")
+
+    def switch_random_tab(self):
+        """
+        Randomly switch tabs inside the current application.
+        Simulates randomness by jumping multiple tabs.
+        """
+        if not self.enable_tab:
+            return
+
+        os_type = self.os_type
+
+        # Random number of tab jumps
+        jumps = random.randint(1, 4)
+
+        try:
+            for _ in range(jumps):
+                if os_type  == "Windows":  # Windows
+                    self.keyboard.press(Key.ctrl)
+                    self.keyboard.press(Key.tab)
+                    self.keyboard.release(Key.tab)
+                    self.keyboard.release(Key.ctrl)
+
+                elif os_type == "Darwin":  # MacOS
+                    self.keyboard.press(Key.ctrl)
+                    self.keyboard.press(Key.tab)
+                    self.keyboard.release(Key.tab)
+                    self.keyboard.release(Key.ctrl)
+
+                elif os_type == "Linux":  # Linux
+                    self.keyboard.press(Key.ctrl)
+                    self.keyboard.press(Key.tab)
+                    self.keyboard.release(Key.tab)
+                    self.keyboard.release(Key.ctrl)
+
+                time.sleep(0.1)
+
+        except Exception as e:
+            print(f"Random tab switch failed: {e}")
 
     def on_press(self, key):
         """
@@ -185,20 +294,34 @@ class StayinAlive:
 
         def mouse_movement():
             while self.running:
-                if self.mouse:
-                    self.move_mouse_randomly()  # Move mouse randomly
+                self.move_mouse_randomly()  # Move mouse randomly
 
         def key_pressing():
             while self.running:
-                if self.keyboard:
-                    self.press_random_key()  # Press a random key
+                self.press_random_key()  # Press a random key
+
+        def window_switching():
+            while self.running:
+                self.switch_random_window()  # Switch a random window
+                time.sleep(self.window_interval)
+
+        def tab_switching():
+            while self.running:
+                self.switch_random_tab()  # Switch a random tab
+                time.sleep(self.tab_interval)
 
         # Create and start threads for mouse movement and key pressing
-        mouse_thread = threading.Thread(target=mouse_movement)
-        key_thread = threading.Thread(target=key_pressing)
-
-        mouse_thread.start()
-        key_thread.start()
+        threads = []
+        if self.enable_mouse:
+            threads.append(threading.Thread(target=mouse_movement, daemon=True))
+        if self.enable_keyboard:
+            threads.append(threading.Thread(target=key_pressing, daemon=True))
+        if self.enable_window:
+            threads.append(threading.Thread(target=window_switching, daemon=True))
+        if self.enable_tab:
+            threads.append(threading.Thread(target=tab_switching, daemon=True))
+        for t in threads:
+            t.start()
 
         print("Press ESC or Ctrl+C to stop the program.")
 
@@ -210,8 +333,8 @@ class StayinAlive:
             self.stop()  # Handle Ctrl+C (KeyboardInterrupt) gracefully
 
         # Wait for threads to complete
-        mouse_thread.join()
-        key_thread.join()
+        for t in threads:
+            t.join()
 
         # Ensure any subprocesses are cleaned up
         self.stop_prevent_sleep()  # Stop preventing sleep on all OSes
