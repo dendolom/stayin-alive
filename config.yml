@@ -7,10 +7,10 @@ key_interval: 5  # Default is 5 seconds
 mouse_interval: 5  # Default is 5 seconds
 
 # Time interval in seconds for window switching
-window_interval: 10 # Default is 10 seconds
+window_interval: 10  # Default is 10 seconds
 
 # Time interval in seconds for tab switching
-tab_interval: 10 # Default is 10 seconds
+tab_interval: 10  # Default is 10 seconds
 
 # Smoothness of key presses (lower is smoother)
 key_smoothness: 0.1  # Default is 0.1

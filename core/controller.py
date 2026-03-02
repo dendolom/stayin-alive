@@ -57,6 +57,9 @@ class StayinAlive:
         self.keyboard = KeyboardController()
         self.mouse = MouseController()
 
+        # Synchronize keyboard actions across threads
+        self.keyboard_lock = threading.Lock()
+
         # Alphanumeric characters used for simulated typing
         self.keys = (
             [chr(i) for i in range(97, 123)] +   # a-z
@@ -188,17 +191,18 @@ class StayinAlive:
         if not self.enable_keyboard:
             return
 
-        num_chars = random.randint(1, 10)  # Randomly choose the number of characters to type
-        keys_to_press = random.choices(self.keys, k=num_chars)  # Select random keys to press
+        with self.keyboard_lock:
+            num_chars = random.randint(1, 10)  # Randomly choose the number of characters to type
+            keys_to_press = random.choices(self.keys, k=num_chars)  # Select random keys to press
 
-        for key in keys_to_press:
-            self.keyboard.press(key)  # Press the key
-            time.sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
-            self.keyboard.release(key)  # Release the key
+            for key in keys_to_press:
+                self.keyboard.press(key)  # Press the key
+                time.sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
+                self.keyboard.release(key)  # Release the key
 
-        # End the sequence with a space
-        self.keyboard.press(' ')
-        self.keyboard.release(' ')
+            # End the sequence with a space
+            self.keyboard.press(' ')
+            self.keyboard.release(' ')
 
         time.sleep(self.key_interval)  # Throttle key presses
 
@@ -260,24 +264,27 @@ class StayinAlive:
         try:
             for _ in range(jumps):
                 if os_type  == "Windows":  # Windows
-                    self.keyboard.press(Key.ctrl)
-                    self.keyboard.press(Key.tab)
-                    self.keyboard.release(Key.tab)
-                    self.keyboard.release(Key.ctrl)
+                    with self.keyboard_lock:
+                        self.keyboard.press(Key.ctrl)
+                        self.keyboard.press(Key.tab)
+                        self.keyboard.release(Key.tab)
+                        self.keyboard.release(Key.ctrl)
 
                 elif os_type == "Darwin":  # MacOS
-                    self.keyboard.press(Key.cmd)
-                    self.keyboard.press(Key.shift)
-                    self.keyboard.press(']')
-                    self.keyboard.release(']')
-                    self.keyboard.release(Key.shift)
-                    self.keyboard.release(Key.cmd)
+                    with self.keyboard_lock:
+                        self.keyboard.press(Key.cmd)
+                        self.keyboard.press(Key.shift)
+                        self.keyboard.press(']')
+                        self.keyboard.release(']')
+                        self.keyboard.release(Key.shift)
+                        self.keyboard.release(Key.cmd)
 
                 elif os_type == "Linux":  # Linux
-                    self.keyboard.press(Key.ctrl)
-                    self.keyboard.press(Key.tab)
-                    self.keyboard.release(Key.tab)
-                    self.keyboard.release(Key.ctrl)
+                    with self.keyboard_lock:
+                        self.keyboard.press(Key.ctrl)
+                        self.keyboard.press(Key.tab)
+                        self.keyboard.release(Key.tab)
+                        self.keyboard.release(Key.ctrl)
 
                 time.sleep(0.1)
 
