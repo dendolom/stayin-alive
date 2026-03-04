@@ -3,3 +3,4 @@ pynput
 pyyaml
 pydantic
 pygetwindow
+faker

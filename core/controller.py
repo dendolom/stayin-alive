@@ -5,6 +5,8 @@ import threading
 import platform
 import subprocess
 import ctypes
+
+from faker import Faker
 from pynput.mouse import Controller as MouseController
 from pynput.keyboard import Controller as KeyboardController, Key, Listener
 
@@ -20,7 +22,8 @@ class StayinAlive:
                  enable_keyboard,
                  enable_mouse,
                  enable_window,
-                 enable_tab):
+                 enable_tab,
+                 enable_structured_typing):
         """
         Initialize the StayinAlive class with configurable parameters.
 
@@ -34,6 +37,7 @@ class StayinAlive:
         :param enable_mouse: Boolean to enable or disable mouse control
         :param enable_window: Boolean to enable or disable window switching
         :param enable_tab: Boolean to enable or disable tab switching
+        :param enable_structured_typing: Boolean to enable or disable structured typing
         """
 
         # Detect operating system once and reuse everywhere
@@ -72,6 +76,10 @@ class StayinAlive:
         self.enable_mouse = enable_mouse
         self.enable_window = enable_window
         self.enable_tab = enable_tab
+        self.enable_structured_typing = enable_structured_typing
+
+        # Faker instance for human-like structured typing
+        self.faker = Faker()
 
         # Track subprocesses for macOS and Linux sleep prevention
         self.caffeinate_process = None
@@ -192,19 +200,51 @@ class StayinAlive:
             return
 
         with self.keyboard_lock:
-            num_chars = random.randint(1, 10)  # Randomly choose the number of characters to type
-            keys_to_press = random.choices(self.keys, k=num_chars)  # Select random keys to press
+            if self.enable_structured_typing:
+                # Generate realistic sentence
+                sentence = self.faker.sentence()
 
-            for key in keys_to_press:
-                self.keyboard.press(key)  # Press the key
-                time.sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
-                self.keyboard.release(key)  # Release the key
+                # Occasionally generate paragraph instead
+                if random.random() > 0.8:
+                    sentence = self.faker.paragraph(nb_sentences=2)
 
-            # End the sequence with a space
-            self.keyboard.press(' ')
-            self.keyboard.release(' ')
+                # Add trailing space after generated text
+                sentence = sentence + " "
 
-        time.sleep(self.key_interval)  # Throttle key presses
+                for char in sentence:
+                    # Human-like variable delay per character
+                    delay = random.uniform(
+                        self.key_smoothness * 0.5,
+                        self.key_smoothness * 1.8
+                    )
+
+                    self.keyboard.press(char)
+                    time.sleep(delay)
+                    self.keyboard.release(char)
+
+                    # Small chance to simulate typing mistake
+                    if random.random() < 0.03:
+                        wrong_char = random.choice(self.keys)
+                        self.keyboard.press(wrong_char)
+                        self.keyboard.release(wrong_char)
+                        time.sleep(0.05)
+                        self.keyboard.press(Key.backspace)
+                        self.keyboard.release(Key.backspace)
+
+            else:
+                num_chars = random.randint(1, 10)  # Randomly choose the number of characters to type
+                keys_to_press = random.choices(self.keys, k=num_chars)  # Select random keys to press
+
+                for key in keys_to_press:
+                    self.keyboard.press(key)  # Press the key
+                    time.sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
+                    self.keyboard.release(key)  # Release the key
+
+                # End the sequence with a space
+                self.keyboard.press(' ')
+                self.keyboard.release(' ')
+
+            time.sleep(self.key_interval)  # Throttle key presses
 
     def switch_random_window(self):
         """

@@ -29,3 +29,6 @@ enable_window: True  # Default is True
 
 # Enable or disable tab switching (True/False)
 enable_tab: True  # Default is True
+
+# Enable or disable structured typing (True/False)
+enable_structured_typing: True  # Default is True

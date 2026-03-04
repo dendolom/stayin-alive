@@ -4,6 +4,9 @@ The `stayin-alive` Python script is designed to keep your computer active by sim
 ## Features
 - **Random Mouse Movements:** The mouse cursor moves to random positions on the screen at regular intervals.
 - **Random Key Presses:** Random alphanumeric keys are pressed at regular intervals, ensuring your system stays active.
+- **Structured Typing Mode:** Optionally simulates human-like structured typing using realistic sentences and paragraphs.
+- **Window Switching:** Randomly switches between active application windows.
+- **Tab Switching:** Randomly switches between tabs within the current application.
 - **Smooth Movements:** Both mouse and keyboard actions can be performed with adjustable smoothness, creating more natural movements.
 - **Prevent System Sleep:** Prevents your system from sleeping, ensuring continuous operation.
 - **Configurable Settings:** Customize the behavior through a `config.yml` file, including mouse movement intervals, key press intervals, smoothness and option to enable or disable mouse and keyboard simulation.
@@ -70,6 +73,9 @@ enable_window: True  # Default is True
 
 # Enable or disable tab switching (True/False)
 enable_tab: True  # Default is True
+
+# Enable or disable structured typing (True/False)
+enable_structured_typing: True  # Default is True
 ```
 
 ## Run

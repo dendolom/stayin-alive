@@ -17,6 +17,7 @@ def main():
     print(f"LOADED ENABLE_MOUSE={config.enable_mouse}")
     print(f"LOADED ENABLE_WINDOW={config.enable_window}")
     print(f"LOADED ENABLE_TAB={config.enable_tab}")
+    print(f"LOADED ENABLE_STRUCTURED_TYPING={config.enable_structured_typing}")
 
     # Create and start the StayinAlive instance with configuration
     stayin_alive = StayinAlive(
@@ -30,6 +31,7 @@ def main():
         enable_keyboard=config.enable_keyboard,
         enable_window=config.enable_window,
         enable_tab=config.enable_tab,
+        enable_structured_typing=config.enable_structured_typing,
     )
     stayin_alive.start()
 

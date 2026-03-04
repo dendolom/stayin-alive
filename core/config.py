@@ -14,6 +14,8 @@ class ConfigModel(BaseModel):
     enable_mouse: Optional[bool] = True
     enable_window: Optional[bool] = True
     enable_tab: Optional[bool] = True
+    enable_structured_typing: Optional[bool] = True
+
 
 def load_config(config_file="config.yml") -> ConfigModel:
     """
