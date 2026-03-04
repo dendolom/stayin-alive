@@ -8,7 +8,7 @@ import ctypes
 
 from faker import Faker
 from pynput.mouse import Controller as MouseController
-from pynput.keyboard import Controller as KeyboardController, Key, Listener
+from pynput.keyboard import Controller as KeyboardController, Key
 
 
 class StayinAlive:
@@ -55,7 +55,9 @@ class StayinAlive:
 
 
         # Controls main loop execution
-        self.running = True
+        self.running = False
+        self.threads = []
+        self.thread_lock = threading.Lock()
 
         # Keyboard and mouse controllers are always initialized
         self.keyboard = KeyboardController()
@@ -121,6 +123,16 @@ class StayinAlive:
         elif os_type == "Linux":  # Linux
             self.prevent_sleep_linux()
 
+    def safe_sleep(self, duration):
+        """
+        Sleep for duration seconds.
+        """
+        end_time = time.time() + duration
+        while time.time() < end_time:
+            if not self.running:
+                break
+            time.sleep(0.02)  # Faster responsiveness
+
     @staticmethod
     def stop_prevent_sleep_windows():
         """
@@ -176,7 +188,9 @@ class StayinAlive:
             x = int(start_pos[0] + i * x_step)
             y = int(start_pos[1] + i * y_step)
             self.mouse.position = (x, y)
-            time.sleep(self.mouse_smoothness / steps)  # Sleep to simulate smooth movement
+            if not self.running:
+                break
+            self.safe_sleep(self.mouse_smoothness / steps)  # Sleep to simulate smooth movement
 
     def move_mouse_randomly(self):
         """
@@ -189,7 +203,7 @@ class StayinAlive:
         start_pos = self.mouse.position  # Get current mouse position
         end_pos = (random.randint(0, screen_width - 1), random.randint(0, screen_height - 1))  # Random target position
         self.move_mouse_smoothly(start_pos, end_pos)  # Move mouse smoothly
-        time.sleep(self.mouse_interval)  # Throttle mouse movement
+        self.safe_sleep(self.mouse_interval)  # Throttle mouse movement
 
     def press_random_key(self):
         """
@@ -212,6 +226,9 @@ class StayinAlive:
                 sentence = sentence + " "
 
                 for char in sentence:
+                    if not self.running:
+                        break
+
                     # Human-like variable delay per character
                     delay = random.uniform(
                         self.key_smoothness * 0.5,
@@ -219,7 +236,7 @@ class StayinAlive:
                     )
 
                     self.keyboard.press(char)
-                    time.sleep(delay)
+                    self.safe_sleep(delay)
                     self.keyboard.release(char)
 
                     # Small chance to simulate typing mistake
@@ -227,7 +244,7 @@ class StayinAlive:
                         wrong_char = random.choice(self.keys)
                         self.keyboard.press(wrong_char)
                         self.keyboard.release(wrong_char)
-                        time.sleep(0.05)
+                        self.safe_sleep(0.05)
                         self.keyboard.press(Key.backspace)
                         self.keyboard.release(Key.backspace)
 
@@ -237,14 +254,14 @@ class StayinAlive:
 
                 for key in keys_to_press:
                     self.keyboard.press(key)  # Press the key
-                    time.sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
+                    self.safe_sleep(self.key_smoothness)  # Delay for smooth typing based on key_smoothness parameter
                     self.keyboard.release(key)  # Release the key
 
                 # End the sequence with a space
                 self.keyboard.press(' ')
                 self.keyboard.release(' ')
 
-            time.sleep(self.key_interval)  # Throttle key presses
+            self.safe_sleep(self.key_interval)  # Throttle key presses
 
     def switch_random_window(self):
         """
@@ -280,10 +297,11 @@ class StayinAlive:
                 subprocess.run(["osascript", "-e", script], timeout=5)
 
             elif os_type == "Linux":  # Linux
-                self.keyboard.press(Key.alt)
-                self.keyboard.press(Key.tab)
-                self.keyboard.release(Key.tab)
-                self.keyboard.release(Key.alt)
+                with self.keyboard_lock:
+                    self.keyboard.press(Key.alt)
+                    self.keyboard.press(Key.tab)
+                    self.keyboard.release(Key.tab)
+                    self.keyboard.release(Key.alt)
 
         except Exception as e:
             print(f"Random window switch failed: {e}")
@@ -303,6 +321,9 @@ class StayinAlive:
 
         try:
             for _ in range(jumps):
+                if not self.running:
+                    break
+
                 if os_type  == "Windows":  # Windows
                     with self.keyboard_lock:
                         self.keyboard.press(Key.ctrl)
@@ -326,7 +347,7 @@ class StayinAlive:
                         self.keyboard.release(Key.tab)
                         self.keyboard.release(Key.ctrl)
 
-                time.sleep(0.1)
+                self.safe_sleep(0.1)
 
         except Exception as e:
             print(f"Random tab switch failed: {e}")
@@ -344,10 +365,18 @@ class StayinAlive:
         """
         Start the threads and listeners for mouse and keyboard actions.
         """
+        with self.thread_lock:
+            if self.running:
+                return
+            self.running = True
+
         self.prevent_sleep()  # Prevent the system from sleeping
+        self.threads = []
 
         def mouse_movement():
             while self.running:
+                if not self.running:
+                    break
                 self.move_mouse_randomly()  # Move mouse randomly
 
         def key_pressing():
@@ -357,46 +386,46 @@ class StayinAlive:
         def window_switching():
             while self.running:
                 self.switch_random_window()  # Switch a random window
-                time.sleep(self.window_interval)
+                self.safe_sleep(self.window_interval)
 
         def tab_switching():
             while self.running:
                 self.switch_random_tab()  # Switch a random tab
-                time.sleep(self.tab_interval)
+                self.safe_sleep(self.tab_interval)
 
         # Create and start threads for mouse movement and key pressing
-        threads = []
         if self.enable_mouse:
-            threads.append(threading.Thread(target=mouse_movement, daemon=True))
+            self.threads.append(threading.Thread(target=mouse_movement, daemon=True))
         if self.enable_keyboard:
-            threads.append(threading.Thread(target=key_pressing, daemon=True))
+            self.threads.append(threading.Thread(target=key_pressing, daemon=True))
         if self.enable_window:
-            threads.append(threading.Thread(target=window_switching, daemon=True))
+            self.threads.append(threading.Thread(target=window_switching, daemon=True))
         if self.enable_tab:
-            threads.append(threading.Thread(target=tab_switching, daemon=True))
-        for t in threads:
-            t.start()
-
-        print("Press ESC or Ctrl+C to stop the program.")
-
-        # Set up a listener for key press events
-        try:
-            with Listener(on_press=self.on_press) as listener:
-                listener.join()  # Wait for the listener to finish
-        except KeyboardInterrupt:
-            self.stop()  # Handle Ctrl+C (KeyboardInterrupt) gracefully
+            self.threads.append(threading.Thread(target=tab_switching, daemon=True))
 
         # Wait for threads to complete
-        for t in threads:
-            t.join()
+        for thread in self.threads:
+            thread.start()
 
-        # Ensure any subprocesses are cleaned up
-        self.stop_prevent_sleep()  # Stop preventing sleep on all OSes
+        print("Starting Stayin' Alive ...")
+        print("\n")
 
     def stop(self):
         """
         Stop the threads and cleanup.
         """
-        self.running = False
-        print("Program terminated by user.")
+        with self.thread_lock:
+            if not self.running:
+                return
+            print("\n")
+            print("Stopping Stayin' Alive ...")
+            self.running = False
+
+        # Give threads a moment to exit cleanly
+        for thread in self.threads:
+            thread.join(timeout=1)
+
         self.stop_prevent_sleep()  # Ensure sleep prevention is stopped
+        self.threads = []
+
+        print("Stayin' Alive stopped cleanly.")

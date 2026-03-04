@@ -1,0 +1,11 @@
+enable_keyboard: true
+enable_mouse: true
+enable_structured_typing: true
+enable_tab: true
+enable_window: true
+key_interval: 5
+key_smoothness: 0.1
+mouse_interval: 5
+mouse_smoothness: 0.1
+tab_interval: 10
+window_interval: 10
